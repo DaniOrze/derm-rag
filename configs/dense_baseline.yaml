@@ -1,0 +1,40 @@
+# Configuração do experimento de retrieval (dense baseline).
+
+data:
+  # Subset dermatológico gerado na etapa anterior (copie para cá ou ajuste o path)
+  derm_csv: "data/processed/derm_cases.csv"
+  # Coluna com o texto do paciente
+  text_col: "patient"
+  # Coluna com id único do paciente
+  id_col: "patient_uid"
+  # Coluna com as anotações de similaridade (dict {uid: score})
+  similar_col: "similar_patients"
+
+split:
+  # Casos com >= min_similars no ground truth viram queries de teste.
+  # O restante (e os próprios casos) compõem o corpus de busca.
+  min_similars: 1
+  # Quantas queries de teste usar (null = todas as elegíveis)
+  n_queries: 1000
+  seed: 42
+
+embedding:
+  model_name: "BAAI/bge-m3"
+  # 'cuda' no HPC, 'cpu' no Mac, 'mps' em Apple Silicon
+  device: "cuda"
+  batch_size: 32
+  max_length: 1024            # tokens; textos maiores são truncados
+  normalize: true             # normaliza embeddings (cosine via dot product)
+  # Onde salvar/cachear os embeddings (.npy)
+  cache_path: "data/processed/embeddings_bge_m3.npy"
+
+retrieval:
+  # Quantos documentos recuperar por query
+  top_k: 50
+
+evaluation:
+  k_values: [1, 5, 10]
+  # Avaliar também a versão "só score 2" como robustez
+  also_strict: true
+  results_dir: "results"
+  run_name: "dense_bge_m3_baseline"

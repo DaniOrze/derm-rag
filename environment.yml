@@ -1,0 +1,38 @@
+# Ambiente Conda/Mamba para o experimento de RETRIEVAL no HPC (com GPU).
+#
+# Uso:
+#   mamba env create -f environment.yml
+#   mamba activate derm-rag-retrieval
+#
+# Atenção: a versão de torch/vLLM depende do CUDA do HPC. Se a instalação
+# de torch falhar, instale a versão correta separadamente:
+#   pip install torch --index-url https://download.pytorch.org/whl/cu121
+
+name: derm-rag-retrieval
+
+channels:
+  - conda-forge
+  - defaults
+
+dependencies:
+  - python=3.11
+  - pip
+  - ipykernel
+  - jupyterlab
+
+  - numpy
+  - pandas
+  - pyarrow
+  - scipy
+  - matplotlib
+  - seaborn
+  - tqdm
+
+  - pyyaml
+  - rich
+
+  - pip:
+      - torch                # ajuste para a versão CUDA do HPC se necessário
+      - FlagEmbedding        # BGE-M3
+      - sentence-transformers
+      - huggingface_hub

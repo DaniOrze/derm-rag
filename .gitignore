@@ -1,8 +1,6 @@
-data/
-results/
 logs/
 *.npy
-*.csv
+
 __pycache__/
 *.py[cod]
 .ipynb_checkpoints/

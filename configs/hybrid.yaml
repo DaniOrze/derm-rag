@@ -1,0 +1,39 @@
+# Configuração do experimento HÍBRIDO (dense + BM25 + RRF + reranker).
+# Reusa o conjunto de teste e os embeddings do baseline denso.
+
+data:
+  derm_csv: "data/processed/derm_cases.csv"
+  text_col: "patient"
+  id_col: "patient_uid"
+  similar_col: "similar_patients"
+
+split:
+  min_similars: 1
+  n_queries: 1000
+  seed: 42                      # MESMO seed do baseline → queries idênticas
+
+embedding:
+  model_name: "BAAI/bge-m3"
+  device: "mps"                # 'cpu' ou 'mps' no Mac
+  batch_size: 32
+  max_length: 1024
+  normalize: true
+  cache_path: "data/processed/embeddings_bge_m3.npy"   # reusa o cache
+
+retrieval:
+  candidates: 100               # candidatos por método antes da fusão
+  rrf_k: 60                     # constante do RRF
+  use_reranker: true            # liga/desliga o reranker
+  top_k: 50                     # tamanho do ranking final
+
+reranker:
+  model_name: "BAAI/bge-reranker-v2-m3"
+  device: "mps"                # 'cpu' ou 'mps' no Mac
+  batch_size: 32
+  max_length: 512
+
+evaluation:
+  k_values: [1, 5, 10]
+  also_strict: true
+  results_dir: "results"
+  run_name: "hybrid_bge_m3"

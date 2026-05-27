@@ -1,0 +1,69 @@
+{
+  "run_name": "hybrid_bge_m3",
+  "timestamp": "20260527_050838",
+  "config": {
+    "data": {
+      "derm_csv": "data/processed/derm_cases.csv",
+      "text_col": "patient",
+      "id_col": "patient_uid",
+      "similar_col": "similar_patients"
+    },
+    "split": {
+      "min_similars": 1,
+      "n_queries": 1000,
+      "seed": 42
+    },
+    "embedding": {
+      "model_name": "BAAI/bge-m3",
+      "device": "mps",
+      "batch_size": 32,
+      "max_length": 1024,
+      "normalize": true,
+      "cache_path": "data/processed/embeddings_bge_m3.npy"
+    },
+    "retrieval": {
+      "candidates": 100,
+      "rrf_k": 60,
+      "use_reranker": true,
+      "top_k": 50
+    },
+    "reranker": {
+      "model_name": "BAAI/bge-reranker-v2-m3",
+      "device": "mps",
+      "batch_size": 32,
+      "max_length": 512
+    },
+    "evaluation": {
+      "k_values": [
+        1,
+        5,
+        10
+      ],
+      "also_strict": true,
+      "results_dir": "results",
+      "run_name": "hybrid_bge_m3"
+    }
+  },
+  "n_corpus": 18214,
+  "n_queries": 1000,
+  "metrics": {
+    "recall@1": 0.06798107769423559,
+    "ndcg@1": 0.122,
+    "recall@5": 0.18249830257461833,
+    "ndcg@5": 0.15470830720364045,
+    "recall@10": 0.2616971554761029,
+    "ndcg@10": 0.18395496053535004,
+    "mrr": 0.20268596209799952,
+    "n_queries": 1000
+  },
+  "metrics_strict": {
+    "recall@1": 0.1689058171745153,
+    "ndcg@1": 0.27146814404432135,
+    "recall@5": 0.39760915446511014,
+    "ndcg@5": 0.3305020888264255,
+    "recall@10": 0.507449544914919,
+    "ndcg@10": 0.3723240758184425,
+    "mrr": 0.38675248455545885,
+    "n_queries": 361
+  }
+}

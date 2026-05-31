@@ -1,0 +1,33 @@
+# Hybrid BioLORD: Dense (BioLORD-2023-C) + BM25 + RRF
+# Mesma lógica do hybrid.yaml mas com encoder biomédico especializado.
+
+data:
+  derm_csv: "data/processed/derm_cases.csv"
+  text_col: "patient"
+  id_col: "patient_uid"
+  similar_col: "similar_patients"
+
+split:
+  min_similars: 1
+  n_queries: 1000
+  seed: 42
+
+embedding:
+  model_name: "FremyCompany/BioLORD-2023-C"
+  device: "cuda"
+  batch_size: 64
+  max_length: 512
+  normalize: true
+  cache_path: "data/processed/embeddings_biolord.npy"   # reusa cache
+
+retrieval:
+  candidates: 100
+  rrf_k: 60
+  use_reranker: false
+  top_k: 50
+
+evaluation:
+  k_values: [1, 5, 10]
+  also_strict: true
+  results_dir: "results"
+  run_name: "hybrid_biolord"

@@ -1,0 +1,42 @@
+# CRAG com BioLORD-2023-C.
+# Usa threshold=3.0 que foi o melhor na ablação com BGE-M3.
+
+data:
+  derm_csv: "data/processed/derm_cases.csv"
+  text_col: "patient"
+  id_col: "patient_uid"
+  similar_col: "similar_patients"
+
+split:
+  min_similars: 1
+  n_queries: 1000
+  seed: 42
+
+embedding:
+  model_name: "FremyCompany/BioLORD-2023-C"
+  device: "cuda"
+  batch_size: 64
+  max_length: 512
+  normalize: true
+  cache_path: "data/processed/embeddings_biolord.npy"   # reusa cache
+
+retrieval:
+  initial_k: 100
+  threshold: 3.0              # melhor threshold da ablação BGE-M3
+  correction_k: 100
+  rrf_k: 60
+  top_k: 50
+
+reranker:
+  model_name: "BAAI/bge-reranker-v2-m3"
+  device: "cuda"
+  batch_size: 32
+  max_length: 512
+
+score_cache_path: "data/processed/crag_scores_biolord.json"   # cache separado
+
+evaluation:
+  k_values: [1, 5, 10]
+  also_strict: true
+  results_dir: "results"
+  run_name: "crag_biolord"

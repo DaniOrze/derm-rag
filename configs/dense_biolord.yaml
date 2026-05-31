@@ -1,0 +1,36 @@
+# Dense baseline com BioLORD-2023-C.
+#
+# BioLORD-2023-C: encoder biomédico treinado com UMLS + contrastive learning.
+# Backbone: microsoft/BiomedNLP-BiomedBERT-base-uncased-abstract (768-d).
+# Referência: Remy et al. (2023) https://arxiv.org/abs/2311.16075
+#
+# Limitação vs BGE-M3: max_length=512 tokens (vs 1024). Casos muito longos
+# são truncados — comportamento padrão de modelos BERT-base.
+
+data:
+  derm_csv: "data/processed/derm_cases.csv"
+  text_col: "patient"
+  id_col: "patient_uid"
+  similar_col: "similar_patients"
+
+split:
+  min_similars: 1
+  n_queries: 1000
+  seed: 42
+
+embedding:
+  model_name: "FremyCompany/BioLORD-2023-C"
+  device: "cuda"
+  batch_size: 64              # modelo menor (768-d) → batch maior
+  max_length: 512
+  normalize: true
+  cache_path: "data/processed/embeddings_biolord.npy"
+
+retrieval:
+  top_k: 50
+
+evaluation:
+  k_values: [1, 5, 10]
+  also_strict: true
+  results_dir: "results"
+  run_name: "dense_biolord"

@@ -1,0 +1,45 @@
+# CRAG — Corrective Retrieval Augmented Generation
+# Referência: Yan et al. (2024) https://arxiv.org/abs/2401.15884
+#
+# Threshold: logit do reranker. Queries com max_score <= threshold
+# recebem correção BM25. Ajuste com base no max_score_mean reportado.
+# Ponto de partida: 0.0 (neutro). Se muitas queries forem corrigidas
+# desnecessariamente, aumente. Se poucas, diminua.
+
+data:
+  derm_csv: "data/processed/derm_cases.csv"
+  text_col: "patient"
+  id_col: "patient_uid"
+  similar_col: "similar_patients"
+
+split:
+  min_similars: 1
+  n_queries: 1000
+  seed: 42            # MESMO seed → queries idênticas aos outros experimentos
+
+embedding:
+  model_name: "BAAI/bge-m3"
+  device: "cuda"
+  batch_size: 32
+  max_length: 1024
+  normalize: true
+  cache_path: "data/processed/embeddings_bge_m3.npy"   # reusa cache existente
+
+retrieval:
+  initial_k: 100      # candidatos densos iniciais
+  threshold: 0.0      # limiar de confiança (logit reranker)
+  correction_k: 100   # candidatos BM25 na etapa corretiva
+  rrf_k: 60
+  top_k: 50           # tamanho do ranking final
+
+reranker:
+  model_name: "BAAI/bge-reranker-v2-m3"
+  device: "cuda"
+  batch_size: 32
+  max_length: 512
+
+evaluation:
+  k_values: [1, 5, 10]
+  also_strict: true
+  results_dir: "results"
+  run_name: "crag"

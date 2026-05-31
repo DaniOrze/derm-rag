@@ -31,8 +31,17 @@ dependencies:
   - pyyaml
   - rich
 
+  - networkx                # grafo bipartito para GraphRAG
+
   - pip:
       - torch                # ajuste para a versão CUDA do HPC se necessário
       - FlagEmbedding        # BGE-M3
       - sentence-transformers
       - huggingface_hub
+      - bm25s
+      - transformers
+
+      # GraphRAG: NER biomédico
+      # Após criar o ambiente, instale o modelo scispaCy:
+      #   pip install https://s3-us-west-2.amazonaws.com/ai2-s3-scispacy/releases/v0.5.4/en_ner_bc5cdr_md-0.5.4.tar.gz
+      - scispacy

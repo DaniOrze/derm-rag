@@ -1,0 +1,41 @@
+# GraphRAG + Dense fusion via RRF.
+# Combina ranking do grafo de entidades com ranking denso (BGE-M3).
+# Reutiliza todos os caches: embeddings.npy, entities.json, graph.pkl
+
+data:
+  derm_csv: "data/processed/derm_cases.csv"
+  text_col: "patient"
+  id_col: "patient_uid"
+  similar_col: "similar_patients"
+
+split:
+  min_similars: 1
+  n_queries: 1000
+  seed: 42            # MESMO seed → queries idênticas aos outros experimentos
+
+embedding:
+  model_name: "BAAI/bge-m3"
+  device: "cuda"
+  batch_size: 32
+  max_length: 1024
+  normalize: true
+  cache_path: "data/processed/embeddings_bge_m3.npy"   # reusa cache existente
+
+entity_extraction:
+  use_scispacy: false
+  spacy_model: "en_ner_bc5cdr_md"
+  cache_path: "data/processed/entities.json"            # reusa cache existente
+
+graph:
+  cache_path: "data/processed/graph.pkl"               # reusa cache existente
+
+retrieval:
+  candidates: 100     # top-k por método antes da fusão
+  rrf_k: 60           # constante RRF (padrão da literatura)
+  top_k: 50           # tamanho do ranking final
+
+evaluation:
+  k_values: [1, 5, 10]
+  also_strict: true
+  results_dir: "results"
+  run_name: "graphrag_dense_rrf"

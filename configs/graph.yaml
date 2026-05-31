@@ -1,0 +1,31 @@
+# Configuração do experimento GraphRAG.
+# Ontologia: disease (3.0) > morphology (2.0) > location (1.5) > symptom/chemical (1.0)
+# Scoring: IDF-ponderado sobre entidades compartilhadas no grafo bipartito.
+
+data:
+  derm_csv: "data/processed/derm_cases.csv"
+  text_col: "patient"
+  id_col: "patient_uid"
+  similar_col: "similar_patients"
+
+split:
+  min_similars: 1
+  n_queries: 1000
+  seed: 42            # MESMO seed dos outros experimentos → queries idênticas
+
+entity_extraction:
+  use_scispacy: false                             # false = só léxicos curados
+  spacy_model: "en_ner_bc5cdr_md"                # disease + chemical NER
+  cache_path: "data/processed/entities.json"     # processado uma única vez
+
+graph:
+  cache_path: "data/processed/graph.pkl"         # grafo NetworkX serializado
+
+retrieval:
+  top_k: 50
+
+evaluation:
+  k_values: [1, 5, 10]
+  also_strict: true
+  results_dir: "results"
+  run_name: "graphrag_entity"

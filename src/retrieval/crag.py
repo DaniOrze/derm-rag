@@ -20,7 +20,8 @@ são corrigidas, evitando degradar queries onde o dense já funciona bem.
 from __future__ import annotations
 
 from collections import defaultdict
-from typing import Sequence
+from pathlib import Path
+from typing import Optional, Sequence
 
 import numpy as np
 from rich.console import Console
@@ -83,6 +84,7 @@ def crag_retrieval(
     batch_size: int = 32,
     max_length: int = 512,
     rrf_k: int = 60,
+    score_cache_path: Optional[Path | str] = None,
 ) -> tuple[dict[str, list[str]], dict]:
     """Pipeline CRAG completo.
 
@@ -115,31 +117,53 @@ def crag_retrieval(
     """
     from src.retrieval.bm25_search import bm25_search  # importação local
 
-    model, tokenizer = _load_reranker(model_name, device)
     id_to_text = dict(zip(corpus_ids, corpus_texts))
     qid_to_text = dict(zip(query_ids, query_texts))
 
     # ------------------------------------------------------------------
     # Passo 1: pontua candidatos densos para determinar confiança
+    # Scores são cacheados: ablação de threshold roda em segundos
     # ------------------------------------------------------------------
-    console.print("[bold]CRAG — Passo 1: avaliando confiança do retrieval denso[/]")
-
     query_max_scores: dict[str, float] = {}
     query_doc_scores: dict[str, dict[str, float]] = {}
 
-    for qid in track(query_ids, description="Assess"):
-        candidates = dense_rankings.get(qid, [])
-        if not candidates:
-            query_max_scores[qid] = -999.0
-            query_doc_scores[qid] = {}
-            continue
+    if score_cache_path is not None:
+        score_cache_path = Path(score_cache_path)
 
-        qtext = qid_to_text[qid]
-        pairs = [[qtext, id_to_text.get(d, "")] for d in candidates]
-        scores = _score_pairs(model, tokenizer, pairs, device, batch_size, max_length)
+    if score_cache_path is not None and score_cache_path.exists():
+        console.print(f"[green]Carregando scores do cache: {score_cache_path}[/]")
+        import json as _json
+        with open(score_cache_path) as f:
+            cached = _json.load(f)
+        query_doc_scores = cached["query_doc_scores"]
+        query_max_scores = cached["query_max_scores"]
+    else:
+        model, tokenizer = _load_reranker(model_name, device)
+        console.print("[bold]CRAG — Passo 1: avaliando confiança do retrieval denso[/]")
 
-        query_doc_scores[qid] = dict(zip(candidates, scores))
-        query_max_scores[qid] = max(scores)
+        for qid in track(query_ids, description="Assess"):
+            candidates = dense_rankings.get(qid, [])
+            if not candidates:
+                query_max_scores[qid] = -999.0
+                query_doc_scores[qid] = {}
+                continue
+
+            qtext = qid_to_text[qid]
+            pairs = [[qtext, id_to_text.get(d, "")] for d in candidates]
+            scores = _score_pairs(model, tokenizer, pairs, device, batch_size, max_length)
+
+            query_doc_scores[qid] = dict(zip(candidates, scores))
+            query_max_scores[qid] = max(scores)
+
+        if score_cache_path is not None:
+            import json as _json
+            score_cache_path.parent.mkdir(parents=True, exist_ok=True)
+            with open(score_cache_path, "w") as f:
+                _json.dump({
+                    "query_doc_scores": query_doc_scores,
+                    "query_max_scores": query_max_scores,
+                }, f)
+            console.print(f"[green]Scores salvos em {score_cache_path}[/]")
 
     # Estatísticas de confiança
     all_max = list(query_max_scores.values())

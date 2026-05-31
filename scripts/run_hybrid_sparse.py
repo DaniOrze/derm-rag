@@ -1,11 +1,13 @@
 """
-Pipeline CRAG: dense retrieval → assess → correct → evaluate.
+Hybrid BGE-M3: Dense + Sparse (SPLADE-style) + RRF.
+
+Usa os dois modos do mesmo modelo BGE-M3:
+    - Dense:  embedding semântico 1024-d
+    - Sparse: pesos léxicos aprendidos (melhor que BM25 — sem trade-off de vocabulário)
 
 Uso:
-    python scripts/run_crag.py --config configs/crag.yaml
-    python scripts/run_crag.py --config configs/crag.yaml --force-embeddings
-
-Referência: Yan et al. (2024) "Corrective Retrieval Augmented Generation"
+    python scripts/run_hybrid_sparse.py --config configs/hybrid_sparse.yaml
+    python scripts/run_hybrid_sparse.py --config configs/hybrid_sparse.yaml --force-sparse
 """
 from __future__ import annotations
 
@@ -29,8 +31,10 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from src.data.prepare_eval import DataConfig, SplitConfig, prepare_dataset
 from src.retrieval.embeddings import generate_embeddings
 from src.retrieval.dense_search import search as dense_search
-from src.retrieval.bm25_search import build_bm25
-from src.retrieval.crag import crag_retrieval
+from src.retrieval.sparse_search import (
+    generate_sparse_vectors, build_sparse_matrix, sparse_search,
+)
+from src.retrieval.bm25_search import reciprocal_rank_fusion
 from src.evaluation.retrieval_metrics import evaluate_rankings
 
 console = Console()
@@ -38,8 +42,12 @@ console = Console()
 
 def parse_args():
     p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument("--config", default="configs/crag.yaml")
+    p.add_argument("--config", default="configs/hybrid_sparse.yaml")
     p.add_argument("--force-embeddings", action="store_true")
+    p.add_argument(
+        "--force-sparse", action="store_true",
+        help="Regenera vetores esparsos mesmo que o cache exista",
+    )
     return p.parse_args()
 
 
@@ -54,7 +62,7 @@ def print_metrics(title: str, metrics: dict) -> None:
 
 def main():
     args = parse_args()
-    console.rule("[bold]Experimento CRAG[/]")
+    console.rule("[bold]Hybrid BGE-M3: Dense + Sparse + RRF[/]")
 
     with open(args.config) as f:
         cfg = yaml.safe_load(f)
@@ -81,61 +89,54 @@ def main():
     id_to_idx = {cid: i for i, cid in enumerate(ds["corpus_ids"])}
     query_idx = [id_to_idx[q] for q in ds["query_ids"]]
     query_emb = corpus_emb[query_idx]
-    query_texts = [ds["corpus_texts"][i] for i in query_idx]
 
     # ------------------------------------------------------------------
-    console.rule("[bold]3. Retrieval denso inicial[/]")
-    ret_cfg = cfg["retrieval"]
+    console.rule("[bold]3. Vetores esparsos (BGE-M3 sparse)[/]")
+    sp_cfg = cfg["sparse"]
+    corpus_sparse = generate_sparse_vectors(
+        ds["corpus_texts"],
+        model_name=sp_cfg["model_name"],
+        device=sp_cfg["device"],
+        batch_size=sp_cfg["batch_size"],
+        max_length=sp_cfg["max_length"],
+        cache_path=sp_cfg["cache_path"],
+        force_recompute=args.force_sparse,
+    )
+    query_sparse = [corpus_sparse[i] for i in query_idx]
+
+    # ------------------------------------------------------------------
+    console.rule("[bold]4. Busca densa + busca esparsa[/]")
+    candidates = cfg["retrieval"]["candidates"]
+
     dense_rankings = dense_search(
         query_emb, corpus_emb, ds["corpus_ids"],
-        top_k=ret_cfg["initial_k"],
-        query_ids=ds["query_ids"],
-        exclude_self=True,
+        top_k=candidates, query_ids=ds["query_ids"], exclude_self=True,
+    )
+
+    corpus_sparse_matrix = build_sparse_matrix(corpus_sparse)
+    sparse_rankings = sparse_search(
+        query_sparse, corpus_sparse_matrix, ds["corpus_ids"],
+        top_k=candidates, query_ids=ds["query_ids"], exclude_self=True,
     )
 
     # ------------------------------------------------------------------
-    console.rule("[bold]4. Índice BM25 (para etapa corretiva)[/]")
-    bm25_index = build_bm25(ds["corpus_texts"])
-
-    # ------------------------------------------------------------------
-    console.rule("[bold]5. CRAG: assess → correct → rerank[/]")
-    rr_cfg = cfg["reranker"]
-    final_rankings, stats = crag_retrieval(
-        query_texts=query_texts,
-        query_ids=ds["query_ids"],
-        dense_rankings=dense_rankings,
-        bm25_index=bm25_index,
-        corpus_ids=ds["corpus_ids"],
-        corpus_texts=ds["corpus_texts"],
-        model_name=rr_cfg["model_name"],
-        device=rr_cfg["device"],
-        threshold=ret_cfg["threshold"],
-        top_k=ret_cfg["top_k"],
-        correction_k=ret_cfg["correction_k"],
-        batch_size=rr_cfg["batch_size"],
-        max_length=rr_cfg["max_length"],
-        rrf_k=ret_cfg.get("rrf_k", 60),
-        score_cache_path=cfg.get("score_cache_path", "data/processed/crag_scores.json"),
+    console.rule("[bold]5. Fusão RRF (dense + sparse)[/]")
+    rrf_k = cfg["retrieval"].get("rrf_k", 60)
+    top_k = cfg["retrieval"]["top_k"]
+    fused = reciprocal_rank_fusion(
+        [dense_rankings, sparse_rankings], k=rrf_k, top_k=top_k,
     )
-
-    console.print(f"\n[bold]Estatísticas CRAG:[/]")
-    console.print(f"  Queries confiantes (sem correção): {stats['n_confident']}")
-    console.print(f"  Queries corrigidas (BM25+RRF):     {stats['n_corrected']}")
-    console.print(f"  Threshold usado:                   {stats['threshold']}")
-    console.print(f"  Max score médio:                   {stats['max_score_mean']:.4f} ± {stats['max_score_std']:.4f}")
 
     # ------------------------------------------------------------------
     console.rule("[bold]6. Avaliação[/]")
     k_values = cfg["evaluation"]["k_values"]
-    metrics = evaluate_rankings(final_rankings, ds["qrels"], k_values=k_values)
-    print_metrics("CRAG — Métricas (score >= 1)", metrics)
+    metrics = evaluate_rankings(fused, ds["qrels"], k_values=k_values)
+    print_metrics("Hybrid Dense+Sparse — Métricas (score >= 1)", metrics)
 
     metrics_strict = {}
     if cfg["evaluation"].get("also_strict") and ds["qrels_strict"]:
-        metrics_strict = evaluate_rankings(
-            final_rankings, ds["qrels_strict"], k_values=k_values
-        )
-        print_metrics("CRAG — Métricas (score == 2)", metrics_strict)
+        metrics_strict = evaluate_rankings(fused, ds["qrels_strict"], k_values=k_values)
+        print_metrics("Hybrid Dense+Sparse — Métricas (score == 2)", metrics_strict)
 
     # ------------------------------------------------------------------
     console.rule("[bold]7. Salvando resultados[/]")
@@ -146,20 +147,15 @@ def main():
 
     out = results_dir / f"{run_name}_{ts}.json"
     out.write_text(json.dumps({
-        "run_name": run_name,
-        "timestamp": ts,
-        "config": cfg,
-        "n_corpus": len(ds["corpus_ids"]),
-        "n_queries": len(ds["query_ids"]),
-        "crag_stats": stats,
-        "metrics": metrics,
-        "metrics_strict": metrics_strict,
+        "run_name": run_name, "timestamp": ts, "config": cfg,
+        "n_corpus": len(ds["corpus_ids"]), "n_queries": len(ds["query_ids"]),
+        "metrics": metrics, "metrics_strict": metrics_strict,
     }, indent=2, default=str))
     console.print(f"[green]Resultados salvos em {out}[/]")
 
     rankings_file = results_dir / f"{run_name}_{ts}_rankings.json"
     rankings_file.write_text(
-        json.dumps({q: r[:10] for q, r in final_rankings.items()}, indent=2)
+        json.dumps({q: r[:10] for q, r in fused.items()}, indent=2)
     )
     console.print(f"[green]Rankings salvos em {rankings_file}[/]")
 

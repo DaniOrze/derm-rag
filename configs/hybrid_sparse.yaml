@@ -1,0 +1,44 @@
+# Hybrid BGE-M3: Dense + Sparse (SPLADE-style) + RRF
+#
+# Usa os dois modos do BGE-M3 no mesmo modelo:
+#   Dense:  embedding 1024-d (similaridade semântica)
+#   Sparse: pesos léxicos aprendidos (expansão semântica de tokens)
+#
+# Diferença do hybrid.yaml: troca BM25 (estatístico) por BGE-M3 sparse (neural)
+
+data:
+  derm_csv: "data/processed/derm_cases.csv"
+  text_col: "patient"
+  id_col: "patient_uid"
+  similar_col: "similar_patients"
+
+split:
+  min_similars: 1
+  n_queries: 1000
+  seed: 42
+
+embedding:
+  model_name: "BAAI/bge-m3"
+  device: "cuda"
+  batch_size: 32
+  max_length: 1024
+  normalize: true
+  cache_path: "data/processed/embeddings_bge_m3.npy"      # reusa cache
+
+sparse:
+  model_name: "BAAI/bge-m3"
+  device: "cuda"
+  batch_size: 32
+  max_length: 1024
+  cache_path: "data/processed/sparse_vecs_bge_m3.pkl"     # novo cache
+
+retrieval:
+  candidates: 100
+  rrf_k: 60
+  top_k: 50
+
+evaluation:
+  k_values: [1, 5, 10]
+  also_strict: true
+  results_dir: "results"
+  run_name: "hybrid_sparse_bge_m3"

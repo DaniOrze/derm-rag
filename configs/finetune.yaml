@@ -1,0 +1,41 @@
+# Fine-tuning do encoder denso BGE-M3.
+#
+# Divisão:
+#   Test  : 1.000 queries (seed=42 — imutável)
+#   Val   :   700 queries (seed=43)
+#   Train : ~5.141 queries restantes
+#
+# Loss: MultipleNegativesRankingLoss
+#   Positivos: score==2 prioritário, score==1 como fallback
+#   Hard negatives: top-100 BGE-M3 filtrados de verdadeiros positivos
+
+data:
+  derm_csv: "data/processed/derm_cases.csv"
+  text_col: "patient"
+  id_col: "patient_uid"
+  similar_col: "similar_patients"
+
+embedding:
+  model_name: "BAAI/bge-m3"
+  max_length: 1024
+  cache_path: "data/processed/embeddings_bge_m3.npy"
+
+finetune:
+  data_dir:   "data/finetune"
+  output_dir: "models/bge-m3-derm"
+  n_test:     1000          # seed=42 (imutável)
+  n_val:       700          # seed=43
+  val_seed:     43
+  n_hard_negatives: 7       # hard negatives por query
+
+training:
+  gpu:            "7"       # CUDA_VISIBLE_DEVICES — mude para a GPU disponível
+  device:         "cuda"
+  epochs:          3
+  batch_size:      4        # reduzido para baixo uso de memória
+  grad_accum:      8        # simula batch efetivo de 32
+  learning_rate:  0.00002
+  warmup_ratio:   0.1
+  eval_steps:     500
+  use_amp:        true      # mixed precision (fp16)
+  gradient_checkpointing: true   # troca velocidade por memória

@@ -1,0 +1,20 @@
+# Fine-tuning do reranker (cross-encoder) BGE-reranker-v2-m3.
+# Reutiliza os dados de treino já preparados (data/finetune/train.jsonl).
+
+reranker:
+  model_name:        "BAAI/bge-reranker-v2-m3"
+  max_length:        512
+  max_neg_per_query: 5     # negativos por query (1 pos : 5 neg)
+
+finetune:
+  data_dir:   "data/finetune"          # reutiliza dados do encoder fine-tuning
+  output_dir: "models/reranker-derm"
+
+training:
+  gpu:          "5"
+  epochs:        3
+  batch_size:   16          # menor que o encoder — cross-encoder é mais pesado
+  learning_rate: 0.000002   # lr baixo para cross-encoder
+  warmup_ratio:  0.1
+  eval_steps:    300
+  use_amp:       true

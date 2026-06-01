@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -18,6 +19,28 @@ import yaml
 from rich.console import Console
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
+
+# Seleção de GPU: lê do config ANTES de qualquer import torch/CUDA.
+# Se CUDA_VISIBLE_DEVICES já estiver no ambiente (ex: via linha de comando
+# ou SLURM), respeita o valor existente sem sobrescrever.
+def _set_gpu_from_config() -> None:
+    if "CUDA_VISIBLE_DEVICES" in os.environ:
+        return
+    try:
+        _args, _ = argparse.ArgumentParser(add_help=False).parse_known_args()
+        cfg_path = None
+        for i, a in enumerate(sys.argv):
+            if a == "--config" and i + 1 < len(sys.argv):
+                cfg_path = sys.argv[i + 1]
+        if cfg_path:
+            with open(cfg_path) as f:
+                _cfg = yaml.safe_load(f)
+            gpu = str(_cfg.get("training", {}).get("gpu", "7"))
+            os.environ["CUDA_VISIBLE_DEVICES"] = gpu
+    except Exception:
+        pass
+
+_set_gpu_from_config()
 
 console = Console()
 
@@ -85,12 +108,7 @@ def main():
     with open(args.config) as f:
         cfg = yaml.safe_load(f)
 
-    # Seleção de GPU antes de qualquer inicialização CUDA
-    import os
-    gpu = str(cfg["training"].get("gpu", "7"))
-    os.environ["CUDA_VISIBLE_DEVICES"] = gpu
-    console.print(f"[bold]GPU selecionada: {gpu}[/]")
-
+    console.print(f"[bold]GPU: CUDA_VISIBLE_DEVICES={os.environ.get('CUDA_VISIBLE_DEVICES', 'não definido')}[/]")
     console.rule("[bold]Fine-tuning BGE-M3 (sentence-transformers v3)[/]")
 
     ft_cfg = cfg["finetune"]

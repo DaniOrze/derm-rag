@@ -1,0 +1,37 @@
+# Fine-tuning iterativo — Rodada 2.
+#
+# Diferença do finetune.yaml:
+#   - Hard negatives vêm do modelo fine-tuned v1 (mais difíceis)
+#   - Treino começa a partir do fine-tuned v1 (não do BGE-M3 original)
+#   - Output: models/bge-m3-derm-v2
+
+data:
+  derm_csv: "data/processed/derm_cases.csv"
+  text_col: "patient"
+  id_col: "patient_uid"
+  similar_col: "similar_patients"
+
+embedding:
+  model_name: "models/bge-m3-derm"                              # parte do v1
+  max_length: 1024
+  cache_path: "data/processed/embeddings_bge_m3_finetuned.npy"  # hard negs do v1
+
+finetune:
+  data_dir:   "data/finetune_v2"
+  output_dir: "models/bge-m3-derm-v2"
+  n_test:     1000
+  n_val:       700
+  val_seed:     43
+  n_hard_negatives: 7
+
+training:
+  gpu:            "3"
+  device:         "cuda"
+  epochs:          2        # menos epochs — modelo já está especializado
+  batch_size:     32
+  grad_accum:      1
+  learning_rate:  0.000005  # lr menor — ajuste fino, não retreino completo
+  warmup_ratio:   0.1
+  eval_steps:     500
+  use_amp:        true
+  gradient_checkpointing: false

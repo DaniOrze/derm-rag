@@ -25,13 +25,13 @@ finetune:
   n_hard_negatives: 7
 
 training:
-  gpu:            "3"
+  gpu:            "6"
   device:         "cuda"
-  epochs:          2        # menos epochs — modelo já está especializado
-  batch_size:     32
-  grad_accum:      1
-  learning_rate:  0.000005  # lr menor — ajuste fino, não retreino completo
+  epochs:          2
+  batch_size:      8        # 8×3=24 sequências por step (era 32×3=96)
+  grad_accum:      4        # batch efetivo = 8×4 = 32 (igual ao original)
+  learning_rate:  0.000005
   warmup_ratio:   0.1
   eval_steps:     500
   use_amp:        true
-  gradient_checkpointing: false
+  gradient_checkpointing: true   # recomputa ativações → -40% de memória

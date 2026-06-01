@@ -146,7 +146,7 @@ def main():
 
     # ------------------------------------------------------------------
     console.rule("[bold]4. Configurando avaliador de validação[/]")
-    evaluator = build_val_evaluator(val_data, tr_cfg["batch_size"])
+    evaluator = build_val_evaluator(val_data, min(tr_cfg["batch_size"], 16))
 
     # ------------------------------------------------------------------
     console.rule("[bold]5. Configurando treino[/]")

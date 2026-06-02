@@ -56,13 +56,15 @@ def load_jsonl(path: Path) -> list[dict]:
         return [json.loads(line) for line in f if line.strip()]
 
 
-def build_triplet_dataset(examples: list[dict]):
+def build_triplet_dataset(examples: list[dict], query_instruction: str | None = None):
     """Converte JSONL em Dataset HuggingFace com triplets (anchor, positive, negative)."""
     from datasets import Dataset
 
     anchors, positives, negatives = [], [], []
     for ex in examples:
         q = ex["query"]
+        if query_instruction:
+            q = f"Instruct: {query_instruction}\nQuery: {q}"
         negs = ex.get("neg", [])
         for pos in ex["pos"]:
             anchors.append(q)
@@ -139,9 +141,33 @@ def main():
     console.print(f"  Modelo: {cfg['embedding']['model_name']}")
     console.print(f"  max_seq_length: {model.max_seq_length}")
 
+    lora_cfg = cfg.get("lora", {})
+    _peft_model = None
+    if lora_cfg:
+        from peft import LoraConfig, get_peft_model, TaskType
+        peft_config = LoraConfig(
+            task_type=TaskType.FEATURE_EXTRACTION,
+            r=lora_cfg.get("r", 16),
+            lora_alpha=lora_cfg.get("alpha", 32),
+            target_modules=lora_cfg.get("target_modules", ["q_proj", "v_proj"]),
+            lora_dropout=lora_cfg.get("dropout", 0.05),
+            bias="none",
+        )
+        transformer = model[0]
+        _peft_model = get_peft_model(transformer.auto_model, peft_config)
+        transformer.auto_model = _peft_model
+        _peft_model.enable_input_require_grads()
+        trainable = sum(p.numel() for p in _peft_model.parameters() if p.requires_grad)
+        total = sum(p.numel() for p in _peft_model.parameters())
+        console.print(f"  [bold]LoRA:[/] r={lora_cfg.get('r', 16)}, alpha={lora_cfg.get('alpha', 32)}, "
+                      f"treináveis={trainable:,}/{total:,} ({100*trainable/total:.2f}%)")
+
     # ------------------------------------------------------------------
     console.rule("[bold]3. Preparando datasets[/]")
-    train_dataset = build_triplet_dataset(train_data)
+    query_instruction = cfg["embedding"].get("query_instruction")
+    if query_instruction:
+        console.print(f"  [bold]Instrução de query aplicada aos anchors:[/] {query_instruction}")
+    train_dataset = build_triplet_dataset(train_data, query_instruction=query_instruction)
     console.print(f"  Triplets de treino: {len(train_dataset)}")
 
     # ------------------------------------------------------------------
@@ -175,10 +201,12 @@ def main():
         eval_steps=eval_steps,
         save_strategy="steps",
         save_steps=eval_steps,
-        load_best_model_at_end=True,
+        load_best_model_at_end=not bool(lora_cfg),  # LoRA checkpoints incompatíveis com reload automático
         metric_for_best_model="val_cosine_ndcg@10",
         greater_is_better=True,
-        fp16=tr_cfg.get("use_amp", True),
+        fp16=tr_cfg.get("use_amp", True) and not tr_cfg.get("use_bf16", False),
+        bf16=tr_cfg.get("use_bf16", False),
+        optim=tr_cfg.get("optim", "adamw_torch"),
         gradient_checkpointing=tr_cfg.get("gradient_checkpointing", False),
         logging_steps=50,
         report_to="none",
@@ -198,6 +226,9 @@ def main():
 
     # ------------------------------------------------------------------
     console.rule("[bold]7. Salvando modelo final[/]")
+    if _peft_model is not None:
+        model[0].auto_model = _peft_model.merge_and_unload()
+        console.print("  LoRA mergeado no modelo base.")
     model.save_pretrained(str(out_dir))
     console.print(f"[green]Modelo salvo em {out_dir}[/]")
     console.print(

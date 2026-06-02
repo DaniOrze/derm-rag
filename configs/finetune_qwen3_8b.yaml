@@ -1,0 +1,44 @@
+# Fine-tuning Qwen3-Embedding-8B para similaridade de casos dermatológicos.
+#
+# Hard negatives minerados a partir dos embeddings Qwen3-8B já cacheados.
+# Instrução de query aplicada nos anchors durante treino (formato Instruct/Query).
+
+data:
+  derm_csv: "data/processed/derm_cases.csv"
+  text_col: "patient"
+  id_col: "patient_uid"
+  similar_col: "similar_patients"
+
+embedding:
+  model_name: "Qwen/Qwen3-Embedding-8B"
+  max_length: 1024
+  cache_path: "data/processed/embeddings_qwen3_8b.npy"   # já cacheado
+  query_instruction: "Retrieve similar dermatology patient cases with the same diagnosis, morphological features, and anatomical location"
+
+finetune:
+  data_dir:         "data/finetune_qwen3_8b"
+  output_dir:       "models/qwen3-8b-derm"
+  n_test:           1000
+  n_val:             700
+  val_seed:           43
+  n_hard_negatives:    7
+
+lora:
+  r: 16
+  alpha: 32
+  target_modules: ["q_proj", "v_proj"]
+  dropout: 0.05
+
+training:
+  gpu:            "0"       # GPU 0 tem ~67 GB livres
+  device:         "cuda"
+  epochs:          2
+  batch_size:      4        # LoRA libera memória suficiente para batch maior
+  grad_accum:      8        # batch efetivo = 32
+  learning_rate:  0.00002
+  warmup_ratio:   0.1
+  eval_steps:     500
+  use_amp:        false   # fp16 GradScaler não suporta BFloat16
+  use_bf16:       true    # Qwen3 usa BFloat16 nativamente
+  optim:          "adamw_torch"
+  gradient_checkpointing: true

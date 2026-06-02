@@ -1,0 +1,22 @@
+# Fine-tuning do reranker v2 com score>=1 como positivo.
+# Correção do problema da v1: usar só score=2 penalizava casos score=1
+# no ranking final, destruindo o Recall@10 (que conta score>=1).
+
+reranker:
+  model_name:        "BAAI/bge-reranker-v2-m3"
+  max_length:        512
+  max_neg_per_query: 5
+
+finetune:
+  data_dir:          "data/finetune_reranker_v2"   # dados com score>=1 positivo
+  output_dir:        "models/reranker-derm-v2"
+  positive_min_score: 1                             # MUDANÇA: score>=1 é positivo
+
+training:
+  gpu:          "6"
+  epochs:        3
+  batch_size:   16
+  learning_rate: 0.000002
+  warmup_ratio:  0.1
+  eval_steps:    300
+  use_amp:       true

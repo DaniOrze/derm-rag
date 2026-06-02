@@ -42,6 +42,11 @@ console = Console()
 def parse_args():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--config", default="configs/finetune.yaml")
+    p.add_argument(
+        "--positive-min-score", type=int, default=None,
+        help="Score mínimo para um caso ser positivo. "
+             "Default: usa o valor do config (2 para encoder, 1 para reranker).",
+    )
     return p.parse_args()
 
 
@@ -55,6 +60,14 @@ def main():
     data_cfg = DataConfig(**cfg["data"])
     out_dir = Path(cfg["finetune"]["data_dir"])
     out_dir.mkdir(parents=True, exist_ok=True)
+
+    # Score mínimo para positivo: argumento > config > padrão 2
+    positive_min_score = (
+        args.positive_min_score
+        if args.positive_min_score is not None
+        else cfg["finetune"].get("positive_min_score", 2)
+    )
+    console.print(f"  Positive min score: {positive_min_score}")
 
     # ------------------------------------------------------------------
     # 1. Carrega dataset completo para descobrir TODOS os elegíveis
@@ -140,11 +153,17 @@ def main():
     for qid in train_ids:
         qtext = id_to_text[qid]
 
-        # Positivos: score==2 prioritário, score==1 como fallback
-        if qid in qrels_strict and qrels_strict[qid]:
-            pos_ids = list(qrels_strict[qid].keys())
-            n_strict_only += 1
+        # Positivos: depende de positive_min_score
+        if positive_min_score >= 2:
+            # score==2 prioritário, score==1 como fallback
+            if qid in qrels_strict and qrels_strict[qid]:
+                pos_ids = list(qrels_strict[qid].keys())
+                n_strict_only += 1
+            else:
+                pos_ids = list(qrels_all[qid].keys())
+                n_fallback += 1
         else:
+            # score>=1: todos os similares são positivos
             pos_ids = list(qrels_all[qid].keys())
             n_fallback += 1
 

@@ -166,7 +166,7 @@ def main():
     )
 
     def loss_fn(logits, labels):
-        return torch.nn.BCEWithLogitsLoss()(logits.squeeze(), labels.float())
+        return torch.nn.BCEWithLogitsLoss()(logits.view(-1), labels.float())
 
     class RerankerTrainer(Trainer):
         def compute_loss(self, model, inputs, return_outputs=False, **kwargs):

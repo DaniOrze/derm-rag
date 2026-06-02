@@ -1,0 +1,42 @@
+# CRAG base BGE-M3 com threshold=3.0 (melhor threshold da ablação).
+# Reutiliza score cache já calculado — passo de assess é pulado.
+
+data:
+  derm_csv: "data/processed/derm_cases.csv"
+  text_col: "patient"
+  id_col: "patient_uid"
+  similar_col: "similar_patients"
+
+split:
+  min_similars: 1
+  n_queries: 1000
+  seed: 42
+
+embedding:
+  model_name: "BAAI/bge-m3"
+  device: "cuda"
+  batch_size: 32
+  max_length: 1024
+  normalize: true
+  cache_path: "data/processed/embeddings_bge_m3.npy"
+
+retrieval:
+  initial_k: 100
+  threshold: 3.0                # melhor threshold da ablação
+  correction_k: 100
+  rrf_k: 60
+  top_k: 50
+
+reranker:
+  model_name: "BAAI/bge-reranker-v2-m3"
+  device: "cuda"
+  batch_size: 32
+  max_length: 512
+
+score_cache_path: "data/processed/crag_scores.json"   # cache existente, assess pulado
+
+evaluation:
+  k_values: [1, 5, 10]
+  also_strict: true
+  results_dir: "results"
+  run_name: "crag_thr3"         # prefixo único

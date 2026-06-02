@@ -34,14 +34,14 @@ console = Console()
 
 # Pares de sistemas a comparar — (nome_A, prefixo_A, nome_B, prefixo_B)
 # A é o sistema "pior" (baseline), B é o sistema "melhor" (novo)
-# Prefixos devem ser suficientemente específicos para não capturar arquivos errados.
-# Regra: {run_name}_{timestamp}_rankings.json — use prefixo que termine antes do timestamp.
-# Ex: "hybrid_bge_m3_2" captura "hybrid_bge_m3_2026..." mas NÃO "hybrid_bge_m3_finetuned_..."
+# Prefixos correspondem ao run_name dos configs — únicos por design.
+# hybrid_bge_m3_norr  → hybrid sem reranker (configs/hybrid_no_reranker.yaml)
+# crag_thr3           → CRAG base BGE-M3 com threshold=3.0 (configs/crag_thr3.yaml)
 COMPARISONS = [
-    ("Dense BGE-M3",      "dense_bge_m3_baseline",        "Hybrid BGE-M3+BM25",    "hybrid_bge_m3_2"),
+    ("Dense BGE-M3",      "dense_bge_m3_baseline",        "Hybrid BGE-M3+BM25",    "hybrid_bge_m3_norr"),
     ("Dense BGE-M3",      "dense_bge_m3_baseline",        "Dense v1 fine-tuned",   "dense_bge_m3_finetuned_2"),
     ("Dense v1",          "dense_bge_m3_finetuned_2",     "Hybrid v1+BM25",        "hybrid_bge_m3_finetuned_2"),
-    ("Hybrid v1+BM25",    "hybrid_bge_m3_finetuned_2",    "CRAG (thr=3.0)",        "crag_2"),
+    ("Hybrid v1+BM25",    "hybrid_bge_m3_finetuned_2",    "CRAG (thr=3.0)",        "crag_thr3"),
     ("Dense v1",          "dense_bge_m3_finetuned_2",     "Dense v2 iterativo",    "dense_bge_m3_finetuned_v2"),
     ("Hybrid v1+BM25",    "hybrid_bge_m3_finetuned_2",    "Dense v2 iterativo",    "dense_bge_m3_finetuned_v2"),
     ("Dense v2",          "dense_bge_m3_finetuned_v2",    "CRAG v2+reranker ft",   "crag_v2_reranker_finetuned"),

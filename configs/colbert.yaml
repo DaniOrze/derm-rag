@@ -1,0 +1,44 @@
+# ColBERT: Dense (BGE-M3) → MaxSim reranking com vetores multi-token.
+#
+# Dois estágios:
+#   1. Dense retrieval → top-100 candidatos
+#   2. ColBERT MaxSim reranking dos 100 candidatos
+#
+# max_length=128: trunca os documentos a 128 tokens para eficiência.
+# Captura o início do texto clínico que costuma conter os dados mais relevantes.
+
+data:
+  derm_csv: "data/processed/derm_cases.csv"
+  text_col: "patient"
+  id_col: "patient_uid"
+  similar_col: "similar_patients"
+
+split:
+  min_similars: 1
+  n_queries: 1000
+  seed: 42
+
+embedding:
+  model_name: "BAAI/bge-m3"
+  device: "cuda"
+  batch_size: 32
+  max_length: 1024
+  normalize: true
+  cache_path: "data/processed/embeddings_bge_m3.npy"   # reusa cache
+
+colbert:
+  model_name: "BAAI/bge-m3"
+  device: "cuda"
+  batch_size: 16              # menor que dense: cada doc gera N vetores
+  max_length: 128             # truncamento conservador para ColBERT
+  cache_path: "data/processed/colbert_vecs_bge_m3.pkl"
+
+retrieval:
+  candidates: 100             # candidatos do dense antes do reranking
+  top_k: 50                   # ranking final após ColBERT
+
+evaluation:
+  k_values: [1, 5, 10]
+  also_strict: true
+  results_dir: "results"
+  run_name: "colbert_bge_m3"

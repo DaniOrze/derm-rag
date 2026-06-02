@@ -1,0 +1,36 @@
+# Dense baseline com Qwen3-Embedding-0.6B (Alibaba, 2025).
+# Tamanho comparável ao BGE-M3 (600M vs 568M), mas mais recente e
+# instruction-tuned — queries levam prefixo de tarefa, documentos não.
+#
+# query_instruction: instrução que descreve a tarefa de retrieval.
+# query_cache_path: cache separado para embeddings de query com instrução.
+
+data:
+  derm_csv: "data/processed/derm_cases.csv"
+  text_col: "patient"
+  id_col: "patient_uid"
+  similar_col: "similar_patients"
+
+split:
+  min_similars: 1
+  n_queries: 1000
+  seed: 42
+
+embedding:
+  model_name: "Qwen/Qwen3-Embedding-0.6B"
+  device: "cuda"
+  batch_size: 64
+  max_length: 1024            # Qwen3 suporta até 8192, mas corpus médio tem ~400 tok
+  normalize: true
+  cache_path: "data/processed/embeddings_qwen3_0.6b.npy"
+  query_instruction: "Retrieve similar dermatology patient cases with the same diagnosis, morphological features, and anatomical location"
+  query_cache_path:  "data/processed/embeddings_qwen3_0.6b_query.npy"
+
+retrieval:
+  top_k: 50
+
+evaluation:
+  k_values: [1, 5, 10]
+  also_strict: true
+  results_dir: "results"
+  run_name: "dense_qwen3_0.6b"

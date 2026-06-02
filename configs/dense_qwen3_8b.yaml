@@ -1,0 +1,32 @@
+# Dense baseline com Qwen3-Embedding-8B (SOTA MTEB 2025).
+# Requer ~16GB VRAM. Use batch_size=8 se der OOM.
+
+data:
+  derm_csv: "data/processed/derm_cases.csv"
+  text_col: "patient"
+  id_col: "patient_uid"
+  similar_col: "similar_patients"
+
+split:
+  min_similars: 1
+  n_queries: 1000
+  seed: 42
+
+embedding:
+  model_name: "Qwen/Qwen3-Embedding-8B"
+  device: "cuda"
+  batch_size: 16              # menor: modelo maior
+  max_length: 1024
+  normalize: true
+  cache_path: "data/processed/embeddings_qwen3_8b.npy"
+  query_instruction: "Retrieve similar dermatology patient cases with the same diagnosis, morphological features, and anatomical location"
+  query_cache_path:  "data/processed/embeddings_qwen3_8b_query.npy"
+
+retrieval:
+  top_k: 50
+
+evaluation:
+  k_values: [1, 5, 10]
+  also_strict: true
+  results_dir: "results"
+  run_name: "dense_qwen3_8b"

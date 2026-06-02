@@ -81,10 +81,28 @@ def main():
         force_recompute=args.force_embeddings,
     )
 
-    # As queries são um subconjunto do corpus → reusa os embeddings
     id_to_idx = {cid: i for i, cid in enumerate(ds["corpus_ids"])}
     query_idx = [id_to_idx[q] for q in ds["query_ids"]]
-    query_emb = corpus_emb[query_idx]
+
+    # Encoding assimétrico: queries com instrução de tarefa (modelos instruction-tuned)
+    # Documentos são embeddados sem instrução (corpus_emb já gerado acima).
+    query_instruction = emb_cfg.get("query_instruction")
+    if query_instruction:
+        console.print(f"  [bold]Instrução de query:[/] {query_instruction}")
+        query_texts = [ds["corpus_texts"][i] for i in query_idx]
+        prefixed = [f"Instruct: {query_instruction}\nQuery: {t}" for t in query_texts]
+        query_emb = generate_embeddings(
+            prefixed,
+            model_name=emb_cfg["model_name"],
+            device=emb_cfg["device"],
+            batch_size=emb_cfg["batch_size"],
+            max_length=emb_cfg["max_length"],
+            normalize=emb_cfg["normalize"],
+            cache_path=emb_cfg.get("query_cache_path"),
+            force_recompute=args.force_embeddings,
+        )
+    else:
+        query_emb = corpus_emb[query_idx]
 
     # 3. Busca
     console.rule("[bold]3. Busca[/]")

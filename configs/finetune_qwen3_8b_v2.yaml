@@ -1,0 +1,46 @@
+# Fine-tuning iterativo Qwen3-Embedding-8B — Rodada 2.
+#
+# Diferenças do finetune_qwen3_8b.yaml:
+#   - Hard negatives vêm do modelo fine-tuned v1 (mais difíceis)
+#   - Treino começa a partir do fine-tuned v1 (models/qwen3-8b-derm)
+#   - Output: models/qwen3-8b-derm-v2
+
+data:
+  derm_csv: "data/processed/derm_cases.csv"
+  text_col: "patient"
+  id_col: "patient_uid"
+  similar_col: "similar_patients"
+
+embedding:
+  model_name: "models/qwen3-8b-derm"                                    # parte do v1
+  max_length: 1024
+  cache_path: "data/processed/embeddings_qwen3_8b_finetuned.npy"        # hard negs do v1
+  query_instruction: "Retrieve similar dermatology patient cases with the same diagnosis, morphological features, and anatomical location"
+
+finetune:
+  data_dir:         "data/finetune_qwen3_8b_v2"
+  output_dir:       "models/qwen3-8b-derm-v2"
+  n_test:           1000
+  n_val:             700
+  val_seed:           43
+  n_hard_negatives:    7
+
+lora:
+  r: 16
+  alpha: 32
+  target_modules: ["q_proj", "v_proj"]
+  dropout: 0.05
+
+training:
+  gpu:            "0"
+  device:         "cuda"
+  epochs:          2
+  batch_size:      4
+  grad_accum:      8        # batch efetivo = 32
+  learning_rate:  0.000005  # lr menor na rodada 2
+  warmup_ratio:   0.1
+  eval_steps:     500
+  use_amp:        false
+  use_bf16:       true
+  optim:          "adamw_torch"
+  gradient_checkpointing: true

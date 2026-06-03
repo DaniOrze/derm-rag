@@ -1,0 +1,31 @@
+# Dense retrieval com Qwen3-Embedding-8B fine-tuned v2.
+
+data:
+  derm_csv: "data/processed/derm_cases.csv"
+  text_col: "patient"
+  id_col: "patient_uid"
+  similar_col: "similar_patients"
+
+split:
+  min_similars: 1
+  n_queries: 1000
+  seed: 42
+
+embedding:
+  model_name: "models/qwen3-8b-derm-v2"
+  device: "cuda"
+  batch_size: 16
+  max_length: 1024
+  normalize: true
+  cache_path: "data/processed/embeddings_qwen3_8b_finetuned_v2.npy"
+  query_instruction: "Retrieve similar dermatology patient cases with the same diagnosis, morphological features, and anatomical location"
+  query_cache_path: "data/processed/embeddings_qwen3_8b_finetuned_v2_query.npy"
+
+retrieval:
+  top_k: 50
+
+evaluation:
+  k_values: [1, 5, 10]
+  also_strict: true
+  results_dir: "results"
+  run_name: "dense_qwen3_8b_finetuned_v2"

@@ -1,0 +1,36 @@
+data:
+  derm_csv: "data/processed/derm_cases.csv"
+  text_col: "patient"
+  id_col: "patient_uid"
+  similar_col: "similar_patients"
+
+split:
+  min_similars: 1
+  n_queries: 1000
+  seed: 42
+
+embedding:
+  model_name: "Qwen/Qwen3-Embedding-8B"
+  device: "cuda"
+  batch_size: 16
+  max_length: 1024
+  normalize: true
+  cache_path: "data/processed/embeddings_qwen3_8b.npy"
+  query_instruction: "Retrieve similar dermatology patient cases with the same diagnosis, morphological features, and anatomical location"
+  query_cache_path: "data/processed/embeddings_qwen3_8b_query.npy"
+
+retrieval:
+  candidates: 100
+  top_k: 50
+
+reranker:
+  model_name: "BAAI/bge-reranker-v2-m3"
+  device: "cuda"
+  batch_size: 32
+  max_length: 512
+
+evaluation:
+  k_values: [1, 5, 10]
+  also_strict: true
+  results_dir: "results"
+  run_name: "dense_reranker_qwen3_8b"

@@ -1,0 +1,19 @@
+data:
+  derm_csv: "data/processed/derm_cases.csv"
+  text_col: "patient"
+  id_col: "patient_uid"
+  similar_col: "similar_patients"
+
+split:
+  min_similars: 1
+  n_queries: 1000
+  seed: 42
+
+retrieval:
+  top_k: 50
+
+evaluation:
+  k_values: [1, 5, 10]
+  also_strict: true
+  results_dir: "results"
+  run_name: "bm25_baseline"

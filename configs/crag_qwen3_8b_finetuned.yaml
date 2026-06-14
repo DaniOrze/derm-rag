@@ -1,0 +1,43 @@
+# CRAG com Qwen3-Embedding-8B fine-tuned v1 + reranker base (bge-reranker-v2-m3).
+
+data:
+  derm_csv: "data/processed/derm_cases.csv"
+  text_col: "patient"
+  id_col: "patient_uid"
+  similar_col: "similar_patients"
+
+split:
+  min_similars: 1
+  n_queries: 1000
+  seed: 42
+
+embedding:
+  model_name: "models/qwen3-8b-derm"
+  device: "cuda"
+  batch_size: 16
+  max_length: 1024
+  normalize: true
+  cache_path: "data/processed/embeddings_qwen3_8b_finetuned.npy"
+  query_instruction: "Retrieve similar dermatology patient cases with the same diagnosis, morphological features, and anatomical location"
+  query_cache_path: "data/processed/embeddings_qwen3_8b_finetuned_query.npy"
+
+retrieval:
+  initial_k: 100
+  threshold: 3.0
+  correction_k: 100
+  rrf_k: 60
+  top_k: 50
+
+reranker:
+  model_name: "BAAI/bge-reranker-v2-m3"
+  device: "cuda"
+  batch_size: 32
+  max_length: 512
+
+score_cache_path: "data/processed/crag_scores_qwen3_8b_finetuned.json"
+
+evaluation:
+  k_values: [1, 5, 10]
+  also_strict: true
+  results_dir: "results"
+  run_name: "crag_qwen3_8b_finetuned"

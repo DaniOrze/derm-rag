@@ -1,0 +1,39 @@
+# GraphRAG + Dense fusion via RRF — Qwen3-Embedding-0.6B.
+
+data:
+  derm_csv: "data/processed/derm_cases.csv"
+  text_col: "patient"
+  id_col: "patient_uid"
+  similar_col: "similar_patients"
+
+split:
+  min_similars: 1
+  n_queries: 1000
+  seed: 42
+
+embedding:
+  model_name: "Qwen/Qwen3-Embedding-0.6B"
+  device: "cuda"
+  batch_size: 64
+  max_length: 1024
+  normalize: true
+  cache_path: "data/processed/embeddings_qwen3_0.6b.npy"
+
+entity_extraction:
+  use_scispacy: false
+  spacy_model: "en_ner_bc5cdr_md"
+  cache_path: "data/processed/entities.json"
+
+graph:
+  cache_path: "data/processed/graph.pkl"
+
+retrieval:
+  candidates: 100
+  rrf_k: 60
+  top_k: 50
+
+evaluation:
+  k_values: [1, 5, 10]
+  also_strict: true
+  results_dir: "results"
+  run_name: "graphrag_dense_rrf_qwen3_0.6b"

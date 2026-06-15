@@ -34,16 +34,44 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 console = Console()
 
 COMPARISONS = [
-    # (nome_A,             prefixo_A,                   nome_B,                prefixo_B)
-    ("Dense BGE-M3",      "dense_bge_m3_baseline",      "Hybrid BGE-M3+BM25",  "hybrid_bge_m3_norr"),
-    ("Dense BGE-M3",      "dense_bge_m3_baseline",      "Dense v1 ft",         "dense_bge_m3_finetuned_2"),
-    ("Dense BGE-M3",      "dense_bge_m3_baseline",      "Dense v2 iterativo",  "dense_bge_m3_finetuned_v2"),
-    ("Dense v1",          "dense_bge_m3_finetuned_2",   "Hybrid v1+BM25",      "hybrid_bge_m3_finetuned_2"),
-    ("Dense v1",          "dense_bge_m3_finetuned_2",   "Dense v2 iterativo",  "dense_bge_m3_finetuned_v2"),
-    ("Hybrid v1+BM25",    "hybrid_bge_m3_finetuned_2",  "CRAG (thr=3.0)",      "crag_thr3"),
-    ("Hybrid v1+BM25",    "hybrid_bge_m3_finetuned_2",  "Dense v2 iterativo",  "dense_bge_m3_finetuned_v2"),
-    ("Dense v2",          "dense_bge_m3_finetuned_v2",  "CRAG v2+reranker ft", "crag_v2_reranker_finetuned"),
-    ("Dense v2",          "dense_bge_m3_finetuned_v2",  "Hybrid v2+BM25",      "hybrid_bge_m3_finetuned_v2"),
+    # (nome_A,                    prefixo_A,                       nome_B,                       prefixo_B)
+
+    # ── Baseline esparso vs denso ──────────────────────────────────────────────
+    ("BM25",                     "bm25_baseline",                  "Dense BGE-M3",               "dense_bge_m3_baseline"),
+
+    # ── Efeito do fine-tuning (BGE-M3) ────────────────────────────────────────
+    ("Dense BGE-M3",             "dense_bge_m3_baseline",          "Dense BGE-M3 FT v1",         "dense_bge_m3_finetuned_20"),
+    ("Dense BGE-M3 FT v1",       "dense_bge_m3_finetuned_20",     "Dense BGE-M3 FT v2",         "dense_bge_m3_finetuned_v2"),
+
+    # ── Hybrid vs Dense (melhor BGE-M3) ───────────────────────────────────────
+    ("Dense BGE-M3 FT v2",       "dense_bge_m3_finetuned_v2",     "Hybrid BGE-M3 FT v2",        "hybrid_bge_m3_finetuned_v2"),
+
+    # ── Comparação entre famílias de modelos ──────────────────────────────────
+    ("Dense BGE-M3",             "dense_bge_m3_baseline",          "Dense BioLord",               "dense_biolord"),
+    ("Dense BGE-M3",             "dense_bge_m3_baseline",          "ColBERT BGE-M3",              "colbert_bge_m3_20"),
+    ("Dense BGE-M3",             "dense_bge_m3_baseline",          "Dense Qwen3-8B",              "dense_qwen3_8b_20"),
+    ("Dense Qwen3-0.6B",         "dense_qwen3_0.6b",              "Dense Qwen3-8B",              "dense_qwen3_8b_20"),
+
+    # ── Melhor de cada família (BGE-M3 FT v2 vs Qwen3-8B FT v2) ──────────────
+    ("Dense BGE-M3 FT v2",       "dense_bge_m3_finetuned_v2",     "Dense Qwen3-8B FT v2",       "dense_qwen3_8b_finetuned_v2"),
+
+    # ── Efeito do fine-tuning (Qwen3-8B) ──────────────────────────────────────
+    ("Dense Qwen3-8B",           "dense_qwen3_8b_20",             "Dense Qwen3-8B FT v1",       "dense_qwen3_8b_finetuned_20"),
+    ("Dense Qwen3-8B FT v1",     "dense_qwen3_8b_finetuned_20",  "Dense Qwen3-8B FT v2",       "dense_qwen3_8b_finetuned_v2"),
+
+    # ── Hybrid vs Dense (Qwen3-8B) ────────────────────────────────────────────
+    ("Dense Qwen3-8B FT v2",     "dense_qwen3_8b_finetuned_v2",  "Hybrid Qwen3-8B FT v2",      "hybrid_qwen3_8b_finetuned_v2"),
+
+    # ── CRAG vs Hybrid ────────────────────────────────────────────────────────
+    ("Hybrid BGE-M3 FT v2",      "hybrid_bge_m3_finetuned_v2",   "CRAG BGE-M3 FT v2 + FT RR", "crag_v2_reranker_finetuned"),
+    ("Hybrid Qwen3-8B FT v2",    "hybrid_qwen3_8b_finetuned_v2", "CRAG Qwen3-8B FT v2",       "crag_qwen3_8b_finetuned_v2_20"),
+
+    # ── GraphRAG vs Dense ─────────────────────────────────────────────────────
+    ("Dense BGE-M3",             "dense_bge_m3_baseline",          "GraphRAG Dense+RRF",          "graphrag_dense_rrf_20"),
+
+    # ── Dense+Reranker vs Dense (reranker piora — cross-encoder trunca textos longos) ──
+    ("Dense BGE-M3 FT v2",       "dense_bge_m3_finetuned_v2",     "Dense+Reranker BGE-M3 FT",   "dense_reranker_bge_m3_ft_v2_ft"),
+    ("Dense Qwen3-8B FT v2",     "dense_qwen3_8b_finetuned_v2",  "Dense+Reranker Qwen3 FT",    "dense_reranker_qwen3_8b_ft_v2_ft"),
 ]
 
 N_BOOTSTRAP = 10_000

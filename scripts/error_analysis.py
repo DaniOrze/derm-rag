@@ -34,12 +34,15 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 console = Console()
 
 # Sistemas a comparar — nome legível → prefixo do arquivo de rankings em results/
+# Prefixos são suficientemente únicos para que glob(f"{prefix}*_rankings.json")
+# selecione o arquivo correto (mais recente quando há múltiplos).
 SYSTEMS = {
-    "Dense BGE-M3":           "dense_bge_m3_baseline",
-    "Hybrid BGE-M3+BM25":     "hybrid_bge_m3",
-    "CRAG BGE-M3 (thr=3.0)":  "crag",
-    "Dense Fine-tuned":        "dense_bge_m3_finetuned",
-    "Hybrid Fine-tuned+BM25":  "hybrid_bge_m3_finetuned",
+    "BM25":                  "bm25_baseline",
+    "Dense BGE-M3":          "dense_bge_m3_baseline",
+    "Dense BGE-M3 FT v2":    "dense_bge_m3_finetuned_v2",
+    "Hybrid BGE-M3 FT v2":   "hybrid_bge_m3_finetuned_v2",
+    "Dense Qwen3-8B FT v2":  "dense_qwen3_8b_finetuned_v2",
+    "Hybrid Qwen3-8B FT v2": "hybrid_qwen3_8b_finetuned_v2",
 }
 
 

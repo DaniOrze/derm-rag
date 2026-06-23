@@ -1,0 +1,41 @@
+# GraphRAG + Dense (BGE-M3 ft-v2) com entidades Qwen3-8B, fusão via RRF.
+
+data:
+  derm_csv: "data/processed/derm_cases.csv"
+  text_col: "patient"
+  id_col: "patient_uid"
+  similar_col: "similar_patients"
+
+split:
+  min_similars: 1
+  n_queries: 1000
+  seed: 42
+
+generation:
+  model_name: "Qwen/Qwen3-8B"
+
+embedding:
+  model_name: "models/bge-m3-derm-v2"
+  device: "cuda"
+  batch_size: 32
+  max_length: 1024
+  normalize: true
+  cache_path: "data/processed/embeddings_bge_m3_finetuned_v2.npy"
+
+entity_extraction:
+  use_scispacy: false
+  cache_path: "data/processed/entities_qwen.json"
+
+graph:
+  cache_path: "data/processed/graph_qwen.pkl"
+
+retrieval:
+  candidates: 100
+  rrf_k: 60
+  top_k: 50
+
+evaluation:
+  k_values: [1, 5, 10]
+  also_strict: true
+  results_dir: "results"
+  run_name: "graphrag_hybrid_qwen_entities_bge_m3_ft_v2"

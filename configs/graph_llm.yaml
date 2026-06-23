@@ -1,0 +1,30 @@
+# GraphRAG com entidades extraídas via Claude Haiku (LLM).
+# Substitui o léxico fixo por extração LLM — testa se o gargalo
+# era mesmo a qualidade das entidades.
+
+data:
+  derm_csv: "data/processed/derm_cases.csv"
+  text_col: "patient"
+  id_col: "patient_uid"
+  similar_col: "similar_patients"
+
+split:
+  min_similars: 1
+  n_queries: 1000
+  seed: 42
+
+entity_extraction:
+  use_scispacy: false
+  cache_path: "data/processed/entities_llm.json"
+
+graph:
+  cache_path: "data/processed/graph_llm.pkl"
+
+retrieval:
+  top_k: 50
+
+evaluation:
+  k_values: [1, 5, 10]
+  also_strict: true
+  results_dir: "results"
+  run_name: "graphrag_llm_entities"

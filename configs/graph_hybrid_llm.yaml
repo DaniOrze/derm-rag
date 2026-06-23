@@ -1,0 +1,39 @@
+# GraphRAG + Dense (BGE-M3 ft-v2) com entidades LLM, fusão via RRF.
+# Combina o melhor embedding com entidades de alta qualidade.
+
+data:
+  derm_csv: "data/processed/derm_cases.csv"
+  text_col: "patient"
+  id_col: "patient_uid"
+  similar_col: "similar_patients"
+
+split:
+  min_similars: 1
+  n_queries: 1000
+  seed: 42
+
+embedding:
+  model_name: "models/bge-m3-derm-v2"
+  device: "cuda"
+  batch_size: 32
+  max_length: 1024
+  normalize: true
+  cache_path: "data/processed/embeddings_bge_m3_finetuned_v2.npy"
+
+entity_extraction:
+  use_scispacy: false
+  cache_path: "data/processed/entities_llm.json"
+
+graph:
+  cache_path: "data/processed/graph_llm.pkl"
+
+retrieval:
+  candidates: 100
+  rrf_k: 60
+  top_k: 50
+
+evaluation:
+  k_values: [1, 5, 10]
+  also_strict: true
+  results_dir: "results"
+  run_name: "graphrag_hybrid_llm_bge_m3_ft_v2"

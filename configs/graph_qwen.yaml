@@ -1,0 +1,31 @@
+# GraphRAG com entidades extraídas via Qwen3-8B local — sem custo de API.
+
+data:
+  derm_csv: "data/processed/derm_cases.csv"
+  text_col: "patient"
+  id_col: "patient_uid"
+  similar_col: "similar_patients"
+
+split:
+  min_similars: 1
+  n_queries: 1000
+  seed: 42
+
+generation:
+  model_name: "Qwen/Qwen3-8B"
+
+entity_extraction:
+  use_scispacy: false
+  cache_path: "data/processed/entities_qwen.json"
+
+graph:
+  cache_path: "data/processed/graph_qwen.pkl"
+
+retrieval:
+  top_k: 50
+
+evaluation:
+  k_values: [1, 5, 10]
+  also_strict: true
+  results_dir: "results"
+  run_name: "graphrag_qwen_entities"

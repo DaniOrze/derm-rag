@@ -1,0 +1,30 @@
+# GraphRAG com entidades extraídas localmente (léxico expandido + lemmatização).
+# Grátis, sem API. Processa ~18K casos em ~5 minutos no CPU.
+
+data:
+  derm_csv: "data/processed/derm_cases.csv"
+  text_col: "patient"
+  id_col: "patient_uid"
+  similar_col: "similar_patients"
+
+split:
+  min_similars: 1
+  n_queries: 1000
+  seed: 42
+
+entity_extraction:
+  use_scispacy: false        # muda para true se en_ner_bc5cdr_md estiver instalado
+  spacy_model: "en_ner_bc5cdr_md"
+  cache_path: "data/processed/entities_lemmatized.json"
+
+graph:
+  cache_path: "data/processed/graph_lemmatized.pkl"
+
+retrieval:
+  top_k: 50
+
+evaluation:
+  k_values: [1, 5, 10]
+  also_strict: true
+  results_dir: "results"
+  run_name: "graphrag_lemmatized"

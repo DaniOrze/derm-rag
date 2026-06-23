@@ -1,0 +1,30 @@
+data:
+  derm_csv: "data/processed/derm_cases.csv"
+  id_col: "patient_uid"
+  text_col: "patient"
+  title_col: "title"
+
+split:
+  n_queries: 50      # começa pequeno para testar; muda para 1000 no run final
+  seed: 42
+
+retrieval:
+  rankings_prefix: "crag_v2_reranker_finetuned"   # melhor retriever (nDCG@10=0.6119)
+  results_dir: "results"
+  top_k: 3
+
+presentation:
+  max_tokens: 400    # trunca a query à apresentação clínica (sem diagnóstico final)
+
+generation:
+  model_name: "Qwen/Qwen3-8B"   # instruct model; já baixado no cache HuggingFace
+  torch_dtype: "bfloat16"
+  max_model_len: 8192            # janela máxima (query ~400 + 3×600 + output 512 ≈ 2700)
+  max_new_tokens: 512
+  temperature: 0.1
+  batch_size: 4                  # queries por batch — aumenta se GPU tiver memória livre
+  context_case_max_tokens: 600   # trunca cada caso recuperado para caber no contexto
+
+evaluation:
+  results_dir: "results"
+  run_name: "rag_gen_qwen3_8b"

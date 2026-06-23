@@ -1,0 +1,30 @@
+data:
+  derm_csv: "data/processed/derm_cases.csv"
+  id_col: "patient_uid"
+  text_col: "patient"
+  title_col: "title"
+
+split:
+  n_queries: 1000
+  seed: 42
+
+retrieval:
+  rankings_prefix: ""   # ignorado quando top_k=0
+  results_dir: "results"
+  top_k: 0              # No-RAG: sem recuperação de casos
+
+presentation:
+  max_tokens: 400
+
+generation:
+  model_name: "Qwen/Qwen3-8B"
+  torch_dtype: "bfloat16"
+  max_model_len: 8192
+  max_new_tokens: 512
+  temperature: 0.1
+  batch_size: 4
+  context_case_max_tokens: 600
+
+evaluation:
+  results_dir: "results"
+  run_name: "rag_gen_norag_qwen3_8b"

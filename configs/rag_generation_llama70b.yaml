@@ -1,0 +1,31 @@
+data:
+  derm_csv: "data/processed/derm_cases.csv"
+  id_col: "patient_uid"
+  text_col: "patient"
+  title_col: "title"
+
+split:
+  n_queries: 1000
+  seed: 42
+
+retrieval:
+  rankings_prefix: "crag_v2_reranker_finetuned"   # melhor retriever (nDCG@10=0.6119)
+  results_dir: "results"
+  top_k: 3
+
+presentation:
+  max_tokens: 400
+
+generation:
+  model_name: "meta-llama/Llama-3.3-70B-Instruct"
+  torch_dtype: "bfloat16"
+  device_map: "auto"   # espalha pelos GPUs expostos via CUDA_VISIBLE_DEVICES
+  max_model_len: 8192
+  max_new_tokens: 512
+  temperature: 0.1
+  batch_size: 1        # 70B: 1 por batch para caber na memória
+  context_case_max_tokens: 600
+
+evaluation:
+  results_dir: "results"
+  run_name: "rag_gen_llama70b"

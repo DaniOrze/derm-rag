@@ -1,0 +1,32 @@
+data:
+  derm_csv: "data/processed/derm_cases.csv"
+  id_col: "patient_uid"
+  text_col: "patient"
+  title_col: "title"
+
+split:
+  n_queries: 1000
+  seed: 42
+
+retrieval:
+  rankings_prefix: "crag_v2_reranker_finetuned"
+  results_dir: "results"
+  top_k: 3
+
+presentation:
+  max_tokens: 400
+
+generation:
+  model_name: "meta-llama/Llama-3.3-70B-Instruct"
+  torch_dtype: "bfloat16"
+  device_map: "single_gpu"     # uma GPU só
+  quantization: "4bit"         # NF4 double-quant → ~35-40GB VRAM
+  max_model_len: 8192
+  max_new_tokens: 512
+  temperature: 0.1
+  batch_size: 1
+  context_case_max_tokens: 600
+
+evaluation:
+  results_dir: "results"
+  run_name: "rag_gen_llama70b_4bit"
